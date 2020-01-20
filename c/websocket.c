@@ -563,7 +563,10 @@ int parse_handshake(ws_ctx_t *ws_ctx, char *handshake) {
         headers->connection[end-start] = '\0';
    
         start = strstr(handshake, "\r\nSec-WebSocket-Protocol: ");
-        if (!start) { return 0; }
+        if (!start) {
+            headers->protocols[0] = '\0';
+            return 1;
+        }
         start += 26;
         end = strstr(start, "\r\n");
         strncpy(headers->protocols, start, end-start);
