@@ -808,18 +808,13 @@ void daemonize(int keepfd) {
     dup(i);                       // Redirect stderr
 }
 
-
-void start_server() {
-    int lsock, csock, pid, sopt = 1, i;
-    struct sockaddr_in serv_addr, cli_addr;
-    socklen_t clilen;
-    ws_ctx_t *ws_ctx;
-
-
+int inet_socket()
+{
     /* Initialize buffers */
-    lsock = socket(AF_INET, SOCK_STREAM, 0);
+    const int lsock = socket(AF_INET, SOCK_STREAM, 0);
     if (lsock < 0) { fatal("ERROR creating listener socket"); }
-    bzero((char *) &serv_addr, sizeof(serv_addr));
+
+    struct sockaddr_in serv_addr = {0};
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(settings.listen_port);
 
@@ -832,10 +827,23 @@ void start_server() {
         serv_addr.sin_addr.s_addr = INADDR_ANY;
     }
 
+    const int sopt = 1;
     setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR, (char *)&sopt, sizeof(sopt));
     if (bind(lsock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
         fatal("ERROR on binding listener socket");
     }
+
+    return lsock;
+}
+
+void start_server() {
+    int lsock, csock, pid, i;
+    struct sockaddr_in cli_addr;
+    socklen_t clilen;
+    ws_ctx_t *ws_ctx;
+
+    lsock = inet_socket();
+
     listen(lsock,100);
 
     signal(SIGPIPE, signal_handler);  // catch pipe
