@@ -15,6 +15,7 @@
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/un.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -819,7 +820,7 @@ int inet_socket()
     serv_addr.sin_port = htons(settings.listen_port);
 
     /* Resolve listen address */
-    if (settings.listen_host && (settings.listen_host[0] != '\0')) {
+    if (settings.listen_host[0] != '\0') {
         if (resolve_host(&serv_addr.sin_addr, settings.listen_host) < -1) {
             fatal("Could not resolve listen address");
         }
@@ -836,13 +837,33 @@ int inet_socket()
     return lsock;
 }
 
+int local_socket(const char *path)
+{
+    const int lsock = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (lsock < 0) { fatal("ERROR creating listener socket"); }
+
+    struct sockaddr_un serv_addr = {0};
+
+    unlink(path);
+
+    serv_addr.sun_family = AF_UNIX;
+    strncpy(serv_addr.sun_path, path, sizeof(serv_addr.sun_path));
+    if (bind(lsock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+        fatal("ERROR on binding listener socket");
+    }
+
+    return lsock;
+}
+
 void start_server() {
     int lsock, csock, pid, i;
     struct sockaddr_in cli_addr;
     socklen_t clilen;
     ws_ctx_t *ws_ctx;
 
-    lsock = inet_socket();
+    lsock = settings.listen_host[0] == '/'
+        ? local_socket(settings.listen_host)
+        : inet_socket();
 
     listen(lsock,100);
 

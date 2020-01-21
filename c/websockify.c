@@ -34,7 +34,7 @@ Traffic Legend:\n\
 ";
 
 char USAGE[] = "Usage: [options] " \
-               "[source_addr:]source_port target_addr:target_port\n\n" \
+               "[source_addr:]source_port|/source_path target_addr:target_port\n\n" \
                "  --verbose|-v       verbose messages and per frame traffic\n" \
                "  --daemon|-D        become a daemon (background process)\n" \
                "  --run-once         handle a single WebSocket connection and exit\n" \
@@ -343,18 +343,23 @@ int main(int argc, char *argv[])
         usage("Invalid number of arguments\n");
     }
 
-    found = strstr(argv[optind], ":");
-    if (found) {
-        memcpy(settings.listen_host, argv[optind], found-argv[optind]);
-        settings.listen_port = strtol(found+1, NULL, 10);
-    } else {
-        settings.listen_host[0] = '\0';
-        settings.listen_port = strtol(argv[optind], NULL, 10);
+    if (argv[optind][0] == '/')
+        strncpy(settings.listen_host, argv[optind], sizeof(settings.listen_host));
+    else {
+        found = strstr(argv[optind], ":");
+        if (found) {
+            memcpy(settings.listen_host, argv[optind], found-argv[optind]);
+            settings.listen_port = strtol(found+1, NULL, 10);
+        } else {
+            settings.listen_host[0] = '\0';
+            settings.listen_port = strtol(argv[optind], NULL, 10);
+        }
+        if (settings.listen_port == 0) {
+            usage("Could not parse listen_port\n");
+        }
     }
+
     optind++;
-    if (settings.listen_port == 0) {
-        usage("Could not parse listen_port\n");
-    }
 
     found = strstr(argv[optind], ":");
     if (found) {
