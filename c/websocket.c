@@ -818,7 +818,7 @@ void start_server() {
 
     /* Initialize buffers */
     lsock = socket(AF_INET, SOCK_STREAM, 0);
-    if (lsock < 0) { error("ERROR creating listener socket"); }
+    if (lsock < 0) { fatal("ERROR creating listener socket"); }
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(settings.listen_port);
